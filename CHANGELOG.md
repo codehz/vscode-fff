@@ -1,9 +1,8 @@
 # Change Log
 
-All notable changes to the "vscode-fff" extension will be documented in this file.
+## [0.0.1]
 
-Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
-
-## [Unreleased]
-
-- Initial release
+- Register workspace-scoped `fff-mcp` via `mcpServerDefinitionProviders`
+- Always pass the current workspace folder as the index root
+- Settings for binary path, extra args, db/log paths, and max cached files
+- Command: **FFF: Show MCP Server Status**

@@ -1,8 +1,9 @@
 {
   "name": "vscode-fff",
-  "displayName": "vscode-fff",
-  "description": "fff-mcp for vscode (auto configure for current project)",
+  "displayName": "FFF for VS Code",
+  "description": "Workspace-scoped fff-mcp for Copilot Chat / language models. Indexes the current project instead of your home directory.",
   "version": "0.0.1",
+  "publisher": "codehz",
   "engines": {
     "vscode": "^1.125.0"
   },
@@ -11,15 +12,101 @@
     "Chat",
     "Other"
   ],
-  "activationEvents": [],
+  "keywords": [
+    "fff",
+    "mcp",
+    "search",
+    "grep",
+    "copilot",
+    "language-model"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
   "main": "./dist/extension.js",
   "contributes": {
+    "mcpServerDefinitionProviders": [
+      {
+        "id": "vscode-fff.servers",
+        "label": "FFF"
+      }
+    ],
     "commands": [
       {
-        "command": "vscode-fff.helloWorld",
-        "title": "Hello World"
+        "command": "vscode-fff.showStatus",
+        "title": "FFF: Show MCP Server Status"
       }
-    ]
+    ],
+    "configuration": {
+      "title": "FFF",
+      "properties": {
+        "fff.enabled": {
+          "type": "boolean",
+          "default": true,
+          "scope": "resource",
+          "description": "Provide an FFF MCP server for this workspace folder."
+        },
+        "fff.binaryPath": {
+          "type": "string",
+          "default": "fff-mcp",
+          "scope": "machine-overridable",
+          "markdownDescription": "Path to the `fff-mcp` executable. Defaults to resolving `fff-mcp` from `PATH`."
+        },
+        "fff.extraArgs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [
+            "--no-update-check"
+          ],
+          "scope": "resource",
+          "markdownDescription": "Extra CLI arguments appended after the workspace path. Example: `[\"--no-warmup\"]`."
+        },
+        "fff.frecencyDb": {
+          "type": "string",
+          "default": "",
+          "scope": "resource",
+          "markdownDescription": "Optional path passed as `--frecency-db`. Empty uses the fff-mcp default."
+        },
+        "fff.historyDb": {
+          "type": "string",
+          "default": "",
+          "scope": "resource",
+          "markdownDescription": "Optional path passed as `--history-db`. Empty uses the fff-mcp default."
+        },
+        "fff.logFile": {
+          "type": "string",
+          "default": "",
+          "scope": "resource",
+          "markdownDescription": "Optional path-shape hint for `--log-file`. Empty uses the fff-mcp default."
+        },
+        "fff.logLevel": {
+          "type": "string",
+          "default": "",
+          "enum": [
+            "",
+            "trace",
+            "debug",
+            "info",
+            "warn",
+            "error"
+          ],
+          "scope": "resource",
+          "markdownDescription": "Optional `--log-level`. Empty uses the fff-mcp default."
+        },
+        "fff.maxCachedFiles": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "default": null,
+          "minimum": 1,
+          "scope": "resource",
+          "markdownDescription": "Optional `--max-cached-files` limit. `null` keeps the fff-mcp default."
+        }
+      }
+    }
   },
   "scripts": {
     "vscode:prepublish": "npm run package",

@@ -1,71 +1,77 @@
-# vscode-fff README
+# FFF for VS Code
 
-This is the README for your extension "vscode-fff". After writing up a brief description, we recommend including the following sections.
+Workspace-scoped [fff-mcp](https://github.com/dmtrKovalenko/fff.nvim) for Copilot Chat and other language-model clients in VS Code.
 
-## Features
+## Why an extension?
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+Global / user-level MCP configs for `fff-mcp` often start with no project path, so the server falls back to the process working directory (frequently `$HOME`) and tries to index everything.
 
-For example if there is an image subfolder under your extension project workspace:
-
-\!\[feature X\]\(images/feature-x.png\)
-
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+This extension registers `fff-mcp` through VS Code's `mcpServerDefinitionProviders` API and **always passes the current workspace folder as the index root**.
 
 ## Requirements
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+- VS Code `1.125+` (or compatible)
+- System-installed `fff-mcp` on `PATH` (or configure `fff.binaryPath`)
 
-## Extension Settings
+Install fff-mcp (example):
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
+```bash
+curl -fsSL https://raw.githubusercontent.com/dmtrKovalenko/fff.nvim/main/install-mcp.sh | bash
+```
 
-For example:
+## What you get
 
-This extension contributes the following settings:
+Each open workspace folder becomes one MCP server labeled `FFF` (or `FFF (<folder>)` in multi-root workspaces). The server exposes the same tools as CLI fff-mcp:
 
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+| Tool | Purpose |
+|------|---------|
+| `grep` | Content search (default) |
+| `find_files` | Fuzzy file-name search |
+| `multi_grep` | OR search across multiple patterns |
 
-## Known Issues
+## Settings
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+| Setting | Scope | Default | Description |
+|---------|-------|---------|-------------|
+| `fff.enabled` | resource | `true` | Enable FFF MCP for this folder |
+| `fff.binaryPath` | machine-overridable | `fff-mcp` | Path to the executable |
+| `fff.extraArgs` | resource | `["--no-update-check"]` | Extra args after the workspace path |
+| `fff.frecencyDb` | resource | `""` | Optional `--frecency-db` |
+| `fff.historyDb` | resource | `""` | Optional `--history-db` |
+| `fff.logFile` | resource | `""` | Optional `--log-file` |
+| `fff.logLevel` | resource | `""` | Optional `--log-level` |
+| `fff.maxCachedFiles` | resource | `null` | Optional `--max-cached-files` |
 
-## Release Notes
+Example (user or workspace `settings.json`):
 
-Users appreciate release notes as you update your extension.
+```json
+{
+  "fff.binaryPath": "/usr/bin/fff-mcp",
+  "fff.extraArgs": ["--no-update-check", "--no-warmup"],
+  "fff.maxCachedFiles": 20000
+}
+```
 
-### 1.0.0
+## Commands
 
-Initial release of ...
+- **FFF: Show MCP Server Status** — print the resolved command/args/cwd for each provided server.
 
-### 1.0.1
+## Development
 
-Fixed issue #.
+```bash
+npm install
+npm run compile
+# F5 → "Run Extension"
+```
 
-### 1.1.0
+In the Extension Development Host:
 
-Added features X, Y, and Z.
+1. Open a project folder.
+2. Open Chat (agent mode) and confirm FFF tools appear.
+3. Optionally run **FFF: Show MCP Server Status**.
 
----
+## Notes
 
-## Following extension guidelines
-
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
-
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
-
-## Working with Markdown
-
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
-
-## For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
+- Prefer this extension over a global `fff` entry in user `mcp.json` for project work, so indexing stays on the workspace root.
+- Multi-root workspaces get one `fff-mcp` process per enabled folder.
+- Child processes are spawned by VS Code (stdio MCP); the extension only supplies definitions.

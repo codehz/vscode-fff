@@ -1,26 +1,60 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
+import { provideFffMcpServers, registerFffMcpProvider } from './fffMcpProvider';
 
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
-export function activate(context: vscode.ExtensionContext) {
+let statusChannel: vscode.OutputChannel | undefined;
 
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
-	console.log('Congratulations, your extension "vscode-fff" is now active!');
-
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with registerCommand
-	// The commandId parameter must match the command field in package.json
-	const disposable = vscode.commands.registerCommand('vscode-fff.helloWorld', () => {
-		// The code you place here will be executed every time your command is executed
-		// Display a message box to the user
-		vscode.window.showInformationMessage('Hello World from vscode-fff!');
-	});
-
-	context.subscriptions.push(disposable);
+function getStatusChannel(): vscode.OutputChannel {
+	statusChannel ??= vscode.window.createOutputChannel('FFF');
+	return statusChannel;
 }
 
-// This method is called when your extension is deactivated
-export function deactivate() {}
+export function activate(context: vscode.ExtensionContext): void {
+	registerFffMcpProvider(context);
+
+	context.subscriptions.push(
+		vscode.commands.registerCommand('vscode-fff.showStatus', () => {
+			const channel = getStatusChannel();
+			const defs = provideFffMcpServers();
+			channel.clear();
+			channel.appendLine('FFF MCP server definitions');
+			channel.appendLine(`Generated at: ${new Date().toISOString()}`);
+			channel.appendLine('');
+
+			if (defs.length === 0) {
+				const folders = vscode.workspace.workspaceFolders ?? [];
+				if (folders.length === 0) {
+					channel.appendLine('No workspace folder open.');
+					channel.appendLine('Open a folder so fff-mcp can index the project root.');
+				} else {
+					channel.appendLine('No servers enabled.');
+					channel.appendLine('Check `fff.enabled` for each workspace folder.');
+				}
+				channel.show(true);
+				return;
+			}
+
+			for (const def of defs) {
+				channel.appendLine(`## ${def.label}`);
+				channel.appendLine(`command: ${def.command}`);
+				channel.appendLine(`args:    ${JSON.stringify(def.args)}`);
+				channel.appendLine(`cwd:     ${def.cwd?.fsPath ?? '(default)'}`);
+				channel.appendLine(`version: ${def.version ?? '(none)'}`);
+				channel.appendLine('');
+			}
+
+			channel.appendLine(`Total: ${defs.length} server(s)`);
+			channel.show(true);
+		}),
+	);
+
+	context.subscriptions.push({
+		dispose: () => {
+			statusChannel?.dispose();
+			statusChannel = undefined;
+		},
+	});
+}
+
+export function deactivate(): void {
+	// MCP child processes are owned by VS Code; nothing to tear down here.
+}

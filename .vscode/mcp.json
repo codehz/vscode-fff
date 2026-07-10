@@ -1,10 +1,4 @@
 {
-	"servers": {
-		"fff": {
-			"type": "stdio",
-			"command": "fff-mcp",
-			"args": []
-		}
-	},
+	"servers": {},
 	"inputs": []
 }
