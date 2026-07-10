@@ -3,6 +3,7 @@
   "displayName": "FFF for VS Code",
   "description": "Workspace-scoped fff-mcp for Copilot Chat / language models. Indexes the current project instead of your home directory.",
   "version": "0.0.1",
+  "license": "MIT",
   "publisher": "codehz",
   "engines": {
     "vscode": "^1.125.0"
