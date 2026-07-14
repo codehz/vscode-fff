@@ -53,8 +53,8 @@ export function activate(context: vscode.ExtensionContext): void {
 				channel.appendLine('');
 			}
 
-			channel.appendLine('Tools: fff_grep, fff_find_files, fff_multi_grep');
-			channel.appendLine(`(#grep, #find_files, #multi_grep)`);
+			channel.appendLine('Tools: grep, find_files, multi_grep');
+			channel.appendLine('(#grep, #find_files, #multi_grep)');
 			channel.appendLine(`Enabled folders: ${launches.length}/${folders.length}`);
 			channel.show(true);
 		}),

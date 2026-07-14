@@ -1,9 +1,9 @@
 import * as vscode from 'vscode';
 import type { FffSessionManager } from './fffSessionManager';
 
-const TOOL_GREP = 'fff_grep';
-const TOOL_FIND_FILES = 'fff_find_files';
-const TOOL_MULTI_GREP = 'fff_multi_grep';
+const TOOL_GREP = 'grep';
+const TOOL_FIND_FILES = 'find_files';
+const TOOL_MULTI_GREP = 'multi_grep';
 
 interface WorkspaceFolderInput {
 	workspaceFolder?: string;
@@ -88,7 +88,7 @@ class FffGrepTool implements vscode.LanguageModelTool<GrepInput> {
 		token: vscode.CancellationToken,
 	): Promise<vscode.LanguageModelToolResult> {
 		if (!options.input?.query?.trim()) {
-			throw new Error('fff_grep requires a non-empty "query" string.');
+			throw new Error('grep requires a non-empty "query" string.');
 		}
 		return invokeMcp(this.manager, 'grep', options.input, token);
 	}
@@ -112,7 +112,7 @@ class FffFindFilesTool implements vscode.LanguageModelTool<FindFilesInput> {
 		token: vscode.CancellationToken,
 	): Promise<vscode.LanguageModelToolResult> {
 		if (!options.input?.query?.trim()) {
-			throw new Error('fff_find_files requires a non-empty "query" string.');
+			throw new Error('find_files requires a non-empty "query" string.');
 		}
 		return invokeMcp(this.manager, 'find_files', options.input, token);
 	}
@@ -142,7 +142,7 @@ class FffMultiGrepTool implements vscode.LanguageModelTool<MultiGrepInput> {
 	): Promise<vscode.LanguageModelToolResult> {
 		const patterns = options.input?.patterns;
 		if (!Array.isArray(patterns) || patterns.length === 0) {
-			throw new Error('fff_multi_grep requires a non-empty "patterns" array.');
+			throw new Error('multi_grep requires a non-empty "patterns" array.');
 		}
 		return invokeMcp(this.manager, 'multi_grep', options.input, token);
 	}

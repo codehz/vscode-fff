@@ -9,7 +9,7 @@ Global / user-level MCP configs for `fff-mcp` often start with no project path, 
 This extension:
 
 1. Always passes the **current workspace folder** as the index root to `fff-mcp`.
-2. Exposes FFF as **native language model tools** (`fff_grep`, `fff_find_files`, `fff_multi_grep`) instead of registering an MCP server in VS Code.
+2. Exposes FFF as **native language model tools** (`grep`, `find_files`, `multi_grep`) instead of registering an MCP server in VS Code.
 
 Native tools avoid Copilot’s MCP UI forcing raw tool-call JSON into the chat transcript (which breaks the “N tool calls” collapsible block and wastes space).
 
@@ -28,9 +28,9 @@ curl -fsSL https://raw.githubusercontent.com/dmtrKovalenko/fff.nvim/main/install
 
 | Tool | `#` reference | Purpose |
 |------|---------------|---------|
-| `fff_grep` | `#grep` | Content search (default) |
-| `fff_find_files` | `#find_files` | Fuzzy file-name search |
-| `fff_multi_grep` | `#multi_grep` | OR search across multiple patterns |
+| `grep` | `#grep` | Content search (default) |
+| `find_files` | `#find_files` | Fuzzy file-name search |
+| `multi_grep` | `#multi_grep` | OR search across multiple patterns |
 
 Under the hood the extension spawns `fff-mcp` per enabled workspace folder and forwards tool calls over stdio JSON-RPC. Multi-root workspaces share one tool set; pass optional `workspaceFolder` (name or path) when needed.
 

@@ -3,7 +3,7 @@
 ## [0.1.0]
 
 - **Breaking:** Stop exposing FFF via `mcpServerDefinitionProviders`
-- Register native language model tools: `fff_grep`, `fff_find_files`, `fff_multi_grep` (`#grep`, `#find_files`, `#multi_grep`)
+- Register native language model tools: `grep`, `find_files`, `multi_grep` (`#grep`, `#find_files`, `#multi_grep`)
 - Spawn `fff-mcp` internally and forward tool calls over NDJSON MCP JSON-RPC
 - Custom chat `invocationMessage` instead of raw MCP JSON presentation
 - Optional `workspaceFolder` input for multi-root workspaces
