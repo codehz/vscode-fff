@@ -86,15 +86,16 @@ export function resolveAllFffLaunches(): FffLaunch[] {
 	return launches;
 }
 
-export interface ResolvedWorkspaceFolder {
-	folder: vscode.WorkspaceFolder;
-	/** Set when a non-empty hint did not match any folder and we fell back. */
-	warning?: string;
-}
-
-function firstEnabledFolder(
-	folders: readonly vscode.WorkspaceFolder[],
-): vscode.WorkspaceFolder {
+/**
+ * Default index root for tool calls: first enabled workspace folder.
+ * Single-root is the primary scenario; multi-root still starts sessions
+ * per folder for status, but tools always target this default.
+ */
+export function getDefaultWorkspaceFolder(): vscode.WorkspaceFolder | undefined {
+	const folders = vscode.workspace.workspaceFolders ?? [];
+	if (folders.length === 0) {
+		return undefined;
+	}
 	const multiRoot = folders.length > 1;
 	for (const folder of folders) {
 		if (resolveFffLaunch(folder, multiRoot)) {
@@ -102,47 +103,4 @@ function firstEnabledFolder(
 		}
 	}
 	return folders[0];
-}
-
-/**
- * Resolve a workspace folder by optional name/path hint.
- * Empty/undefined → first enabled folder.
- * Unmatched hint → first enabled folder + warning (no hard fail).
- */
-export function resolveWorkspaceFolder(hint?: string): ResolvedWorkspaceFolder | undefined {
-	const folders = vscode.workspace.workspaceFolders ?? [];
-	if (folders.length === 0) {
-		return undefined;
-	}
-
-	const trimmed = hint?.trim();
-	if (!trimmed) {
-		return { folder: firstEnabledFolder(folders) };
-	}
-
-	const lower = trimmed.toLowerCase();
-	const byName = folders.find((f) => f.name.toLowerCase() === lower);
-	if (byName) {
-		return { folder: byName };
-	}
-	const byPath = folders.find(
-		(f) => f.uri.fsPath === trimmed || f.uri.fsPath.toLowerCase() === lower,
-	);
-	if (byPath) {
-		return { folder: byPath };
-	}
-	// Partial path / suffix match
-	const bySuffix = folders.find(
-		(f) => f.uri.fsPath.endsWith(trimmed) || f.uri.fsPath.toLowerCase().endsWith(lower),
-	);
-	if (bySuffix) {
-		return { folder: bySuffix };
-	}
-
-	const fallback = firstEnabledFolder(folders);
-	const warning =
-		folders.length === 1
-			? `workspaceFolder is unnecessary in a single-root workspace; omit it (ignored "${trimmed}").`
-			: `workspaceFolder "${trimmed}" not found; using "${fallback.name}" instead. Omit this param unless targeting a specific multi-root folder.`;
-	return { folder: fallback, warning };
 }

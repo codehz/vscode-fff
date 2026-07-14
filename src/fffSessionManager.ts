@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
 import {
 	CONFIG_SECTION,
+	getDefaultWorkspaceFolder,
 	resolveFffLaunch,
-	resolveWorkspaceFolder,
 	type FffLaunch,
 } from './fffConfig';
 import { FffMcpSession } from './fffMcpSession';
@@ -28,23 +28,14 @@ export class FffSessionManager implements vscode.Disposable {
 	}
 
 	/**
-	 * Get or create a live session for the given folder hint.
-	 * Invalid/unknown workspaceFolder falls back to the first enabled folder.
-	 * @param workspaceFolder optional folder name or path (tool input)
+	 * Get or create a live session for the default (first enabled) workspace folder.
 	 */
-	async getSession(
-		workspaceFolder?: string,
-	): Promise<{ session: FffMcpSession; warning?: string }> {
-		const resolved = resolveWorkspaceFolder(workspaceFolder);
-		if (!resolved) {
+	async getSession(): Promise<FffMcpSession> {
+		const folder = getDefaultWorkspaceFolder();
+		if (!folder) {
 			throw new Error(
 				'No workspace folder open. Open a folder so FFF can index the project root.',
 			);
-		}
-
-		const { folder, warning } = resolved;
-		if (warning) {
-			this.log.appendLine(`[FFF] ${warning}`);
 		}
 
 		const multiRoot = (vscode.workspace.workspaceFolders?.length ?? 0) > 1;
@@ -59,7 +50,7 @@ export class FffSessionManager implements vscode.Disposable {
 		const existing = this.sessions.get(key);
 		if (existing) {
 			if (existing.version === launch.version && existing.session.isAlive) {
-				return { session: existing.session, warning };
+				return existing.session;
 			}
 			this.log.appendLine(
 				`[${launch.label}] recreating session (config or process changed)`,
@@ -77,7 +68,7 @@ export class FffSessionManager implements vscode.Disposable {
 			this.sessions.delete(key);
 			throw err;
 		}
-		return { session, warning };
+		return session;
 	}
 
 	/** Snapshot of managed sessions for status output. */
@@ -118,7 +109,7 @@ export class FffSessionManager implements vscode.Disposable {
 			const managed = this.sessions.get(folder.uri.toString());
 			rows.push({
 				label: launch.label,
-				folder: folder.uri.fsPath,
+				folder: launch.folder.uri.fsPath,
 				alive: managed?.session.isAlive ?? false,
 				pid: managed?.session.pid,
 				command: launch.command,

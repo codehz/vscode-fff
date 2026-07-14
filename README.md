@@ -28,11 +28,11 @@ curl -fsSL https://raw.githubusercontent.com/dmtrKovalenko/fff.nvim/main/install
 
 | Tool | `#` reference | Purpose |
 |------|---------------|---------|
-| `grep` | `#grep` | Content search (default) |
-| `find_files` | `#find_files` | Fuzzy file-name search |
-| `multi_grep` | `#multi_grep` | OR search across multiple patterns |
+| `grep` | `#grep` | Content search (default) — `pattern` + optional `constraints` |
+| `find_files` | `#find_files` | Fuzzy file-name search — `query` + optional `constraints` |
+| `multi_grep` | `#multi_grep` | OR search across multiple patterns — `patterns` + optional `constraints` |
 
-Under the hood the extension spawns `fff-mcp` per enabled workspace folder and forwards tool calls over stdio JSON-RPC. Single-root: omit `workspaceFolder` (default is the open folder). Multi-root: pass `workspaceFolder` (name or path) only when targeting a specific root. Unknown values fall back to the first enabled folder with a short warning (no hard fail).
+Under the hood the extension spawns `fff-mcp` for the workspace folder and forwards tool calls over stdio JSON-RPC. Tools always target the first enabled workspace folder (single-root is the primary scenario). File filters go in `constraints`, not mixed into the search text — the same explicit style as `multi_grep`.
 
 ## Migration from MCP
 
@@ -86,5 +86,4 @@ In the Extension Development Host:
 ## Notes
 
 - Prefer this extension over a global `fff` entry in user `mcp.json` for project work.
-- Multi-root workspaces get one `fff-mcp` process per enabled folder (started lazily on first tool use).
 - Child processes are owned by the extension and killed on deactivate / config change.

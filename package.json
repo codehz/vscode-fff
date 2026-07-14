@@ -2,7 +2,7 @@
   "name": "vscode-fff",
   "displayName": "FFF for VS Code",
   "description": "Workspace-scoped FFF search tools for Copilot Chat. Spawns fff-mcp per project and exposes native language model tools.",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "license": "MIT",
   "publisher": "codehz",
   "engines": {
@@ -46,15 +46,22 @@
         "toolReferenceName": "grep",
         "displayName": "FFF Grep",
         "userDescription": "Search file contents with FFF (fast, frecency-ranked).",
-        "modelDescription": "Search file CONTENTS for a bare identifier or pattern. DEFAULT search tool. Prefer bare identifiers (e.g. 'InProgressQuote', 'ActorAuth'), NOT code syntax or complex regex. Filter files with constraint prefixes in the query (e.g. '*.rs query', 'src/ query', '!test/ query'). Use filename, directory (ending with /), or glob expressions to prefilter. Auto-expands definitions with body context. Use find_files when looking for a file by name; use multi_grep for OR across multiple patterns. Do NOT pass workspaceFolder in single-root workspaces — omit it and search the open folder by default.",
+        "modelDescription": "Search file CONTENTS for a bare identifier or pattern. DEFAULT search tool. Prefer bare identifiers (e.g. 'InProgressQuote', 'ActorAuth'), NOT code syntax or complex regex. Put the search text in `pattern` and file filters in `constraints` (e.g. '*.ts', 'src/', '!test/'). Use filename, directory (ending with /), or glob expressions to prefilter. Auto-expands definitions with body context. Use find_files when looking for a file by name; use multi_grep for OR across multiple patterns.",
         "canBeReferencedInPrompt": true,
         "icon": "$(search)",
         "inputSchema": {
           "type": "object",
           "properties": {
-            "query": {
+            "pattern": {
               "type": "string",
-              "description": "Search text or simple pattern with optional constraint prefixes (e.g. '*.ts ActorAuth', 'src/ prepareInvocation')."
+              "description": "Search text or simple pattern (bare identifier preferred). Do NOT put file filters here — use `constraints`."
+            },
+            "constraints": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "File constraints (e.g. '*.{ts,tsx} !test/', 'src/'). Separate from pattern."
             },
             "maxResults": {
               "type": [
@@ -76,14 +83,10 @@
                 "null"
               ],
               "description": "Output format (default 'content')."
-            },
-            "workspaceFolder": {
-              "type": "string",
-              "description": "MULTI-ROOT ONLY. Do not pass in single-root workspaces. Folder name or path when targeting a specific root; omit otherwise. Unknown values fall back to the first enabled folder."
             }
           },
           "required": [
-            "query"
+            "pattern"
           ]
         }
       },
@@ -96,7 +99,7 @@
         "toolReferenceName": "find_files",
         "displayName": "FFF Find Files",
         "userDescription": "Fuzzy file-name search with FFF (frecency-ranked).",
-        "modelDescription": "Fuzzy FILE NAME search (not file contents). Use when looking for a file or module by name. Supports path prefixes ('src/') and glob constraints. Keep queries SHORT — prefer 1-2 terms. Multiple words narrow results (waterfall), not OR. Use grep for content/definitions. Do NOT pass workspaceFolder in single-root workspaces — omit it and search the open folder by default.",
+        "modelDescription": "Fuzzy FILE NAME search (not file contents). Use when looking for a file or module by name. Put short fuzzy terms in `query` (prefer 1-2 terms; multiple words narrow results, not OR) and path/glob filters in `constraints` (e.g. 'src/', '*.ts', '!test/'). Use grep for content/definitions.",
         "canBeReferencedInPrompt": true,
         "icon": "$(file)",
         "inputSchema": {
@@ -104,7 +107,14 @@
           "properties": {
             "query": {
               "type": "string",
-              "description": "Fuzzy search query. Supports path prefixes and glob constraints."
+              "description": "Fuzzy search query (file/module name terms). Keep short — prefer 1-2 terms. Do NOT put path/glob filters here — use `constraints`."
+            },
+            "constraints": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Path/glob constraints (e.g. 'src/', '*.{ts,tsx}', '!test/'). Separate from query."
             },
             "maxResults": {
               "type": [
@@ -119,10 +129,6 @@
                 "null"
               ],
               "description": "Cursor from a previous result for pagination."
-            },
-            "workspaceFolder": {
-              "type": "string",
-              "description": "MULTI-ROOT ONLY. Do not pass in single-root workspaces. Folder name or path when targeting a specific root; omit otherwise. Unknown values fall back to the first enabled folder."
             }
           },
           "required": [
@@ -139,7 +145,7 @@
         "toolReferenceName": "multi_grep",
         "displayName": "FFF Multi Grep",
         "userDescription": "OR content search across multiple patterns with FFF.",
-        "modelDescription": "Search file contents for lines matching ANY of multiple patterns (OR logic). Patterns are literal text — do not escape special characters. Faster than regex alternation for literal text. Use constraints for file filters (e.g. '*.{ts,tsx} !test/'). Prefer this over multiple separate greps when searching case variants or related identifiers. Do NOT pass workspaceFolder in single-root workspaces — omit it and search the open folder by default.",
+        "modelDescription": "Search file contents for lines matching ANY of multiple patterns (OR logic). Patterns are literal text — do not escape special characters. Faster than regex alternation for literal text. Use constraints for file filters (e.g. '*.{ts,tsx} !test/'). Prefer this over multiple separate greps when searching case variants or related identifiers.",
         "canBeReferencedInPrompt": true,
         "icon": "$(search-fuzzy)",
         "inputSchema": {
@@ -186,10 +192,6 @@
                 "null"
               ],
               "description": "Context lines before/after each match."
-            },
-            "workspaceFolder": {
-              "type": "string",
-              "description": "MULTI-ROOT ONLY. Do not pass in single-root workspaces. Folder name or path when targeting a specific root; omit otherwise. Unknown values fall back to the first enabled folder."
             }
           },
           "required": [

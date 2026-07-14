@@ -5,24 +5,22 @@ const TOOL_GREP = 'grep';
 const TOOL_FIND_FILES = 'find_files';
 const TOOL_MULTI_GREP = 'multi_grep';
 
-interface WorkspaceFolderInput {
-	workspaceFolder?: string;
-}
-
-interface GrepInput extends WorkspaceFolderInput {
-	query: string;
+interface GrepInput {
+	pattern: string;
+	constraints?: string | null;
 	maxResults?: number | null;
 	cursor?: string | null;
 	output_mode?: string | null;
 }
 
-interface FindFilesInput extends WorkspaceFolderInput {
+interface FindFilesInput {
 	query: string;
+	constraints?: string | null;
 	maxResults?: number | null;
 	cursor?: string | null;
 }
 
-interface MultiGrepInput extends WorkspaceFolderInput {
+interface MultiGrepInput {
 	patterns: string[];
 	constraints?: string | null;
 	maxResults?: number | null;
@@ -31,18 +29,25 @@ interface MultiGrepInput extends WorkspaceFolderInput {
 	context?: number | null;
 }
 
-function stripWorkspaceFolder<T extends WorkspaceFolderInput>(
-	input: T,
-): { folder?: string; args: Record<string, unknown> } {
-	const { workspaceFolder, ...rest } = input;
+/** Drop null/undefined/empty values before forwarding to fff-mcp. */
+function compactArgs(input: Record<string, unknown>): Record<string, unknown> {
 	const args: Record<string, unknown> = {};
-	for (const [key, value] of Object.entries(rest)) {
+	for (const [key, value] of Object.entries(input)) {
 		if (value === undefined || value === null || value === '') {
 			continue;
 		}
 		args[key] = value;
 	}
-	return { folder: workspaceFolder, args };
+	return args;
+}
+
+/**
+ * fff-mcp grep/find_files expect constraints inlined into `query`.
+ * multi_grep has a separate `constraints` field — leave that path alone.
+ */
+function joinConstraintQuery(constraints: string | null | undefined, text: string): string {
+	const c = constraints?.trim();
+	return c ? `${c} ${text}` : text;
 }
 
 function truncate(s: string, max = 60): string {
@@ -53,22 +58,15 @@ function truncate(s: string, max = 60): string {
 	return `${oneLine.slice(0, max - 1)}…`;
 }
 
-function folderSuffix(folder?: string): string {
-	const t = folder?.trim();
-	return t ? ` (${t})` : '';
-}
-
 async function invokeMcp(
 	manager: FffSessionManager,
 	mcpName: string,
-	input: WorkspaceFolderInput,
+	args: Record<string, unknown>,
 	token: vscode.CancellationToken,
 ): Promise<vscode.LanguageModelToolResult> {
-	const { folder, args } = stripWorkspaceFolder(input);
-	const { session, warning } = await manager.getSession(folder);
-	const text = await session.callTool(mcpName, args, token);
-	const body = warning ? `Warning: ${warning}\n\n${text}` : text;
-	return new vscode.LanguageModelToolResult([new vscode.LanguageModelTextPart(body)]);
+	const session = await manager.getSession();
+	const text = await session.callTool(mcpName, compactArgs(args), token);
+	return new vscode.LanguageModelToolResult([new vscode.LanguageModelTextPart(text)]);
 }
 
 class FffGrepTool implements vscode.LanguageModelTool<GrepInput> {
@@ -78,9 +76,11 @@ class FffGrepTool implements vscode.LanguageModelTool<GrepInput> {
 		options: vscode.LanguageModelToolInvocationPrepareOptions<GrepInput>,
 		_token: vscode.CancellationToken,
 	): Promise<vscode.PreparedToolInvocation> {
-		const q = options.input?.query ?? '';
+		const pattern = options.input?.pattern ?? '';
+		const constraints = options.input?.constraints?.trim();
+		const scope = constraints ? ` [${truncate(constraints, 24)}]` : '';
 		return {
-			invocationMessage: `FFF${folderSuffix(options.input?.workspaceFolder)}: grep "${truncate(q)}"`,
+			invocationMessage: `FFF: grep "${truncate(pattern)}"${scope}`,
 		};
 	}
 
@@ -88,10 +88,21 @@ class FffGrepTool implements vscode.LanguageModelTool<GrepInput> {
 		options: vscode.LanguageModelToolInvocationOptions<GrepInput>,
 		token: vscode.CancellationToken,
 	): Promise<vscode.LanguageModelToolResult> {
-		if (!options.input?.query?.trim()) {
-			throw new Error('grep requires a non-empty "query" string.');
+		const pattern = options.input?.pattern?.trim();
+		if (!pattern) {
+			throw new Error('grep requires a non-empty "pattern" string.');
 		}
-		return invokeMcp(this.manager, 'grep', options.input, token);
+		return invokeMcp(
+			this.manager,
+			'grep',
+			{
+				query: joinConstraintQuery(options.input?.constraints, pattern),
+				maxResults: options.input?.maxResults,
+				cursor: options.input?.cursor,
+				output_mode: options.input?.output_mode,
+			},
+			token,
+		);
 	}
 }
 
@@ -103,8 +114,10 @@ class FffFindFilesTool implements vscode.LanguageModelTool<FindFilesInput> {
 		_token: vscode.CancellationToken,
 	): Promise<vscode.PreparedToolInvocation> {
 		const q = options.input?.query ?? '';
+		const constraints = options.input?.constraints?.trim();
+		const scope = constraints ? ` [${truncate(constraints, 24)}]` : '';
 		return {
-			invocationMessage: `FFF${folderSuffix(options.input?.workspaceFolder)}: find files "${truncate(q)}"`,
+			invocationMessage: `FFF: find files "${truncate(q)}"${scope}`,
 		};
 	}
 
@@ -112,10 +125,20 @@ class FffFindFilesTool implements vscode.LanguageModelTool<FindFilesInput> {
 		options: vscode.LanguageModelToolInvocationOptions<FindFilesInput>,
 		token: vscode.CancellationToken,
 	): Promise<vscode.LanguageModelToolResult> {
-		if (!options.input?.query?.trim()) {
+		const query = options.input?.query?.trim();
+		if (!query) {
 			throw new Error('find_files requires a non-empty "query" string.');
 		}
-		return invokeMcp(this.manager, 'find_files', options.input, token);
+		return invokeMcp(
+			this.manager,
+			'find_files',
+			{
+				query: joinConstraintQuery(options.input?.constraints, query),
+				maxResults: options.input?.maxResults,
+				cursor: options.input?.cursor,
+			},
+			token,
+		);
 	}
 }
 
@@ -132,8 +155,10 @@ class FffMultiGrepTool implements vscode.LanguageModelTool<MultiGrepInput> {
 			n === 1
 				? `"${truncate(String(patterns[0]))}"`
 				: `${n} patterns`;
+		const constraints = options.input?.constraints?.trim();
+		const scope = constraints ? ` [${truncate(constraints, 24)}]` : '';
 		return {
-			invocationMessage: `FFF${folderSuffix(options.input?.workspaceFolder)}: multi_grep ${preview}`,
+			invocationMessage: `FFF: multi_grep ${preview}${scope}`,
 		};
 	}
 
@@ -145,7 +170,19 @@ class FffMultiGrepTool implements vscode.LanguageModelTool<MultiGrepInput> {
 		if (!Array.isArray(patterns) || patterns.length === 0) {
 			throw new Error('multi_grep requires a non-empty "patterns" array.');
 		}
-		return invokeMcp(this.manager, 'multi_grep', options.input, token);
+		return invokeMcp(
+			this.manager,
+			'multi_grep',
+			{
+				patterns,
+				constraints: options.input?.constraints,
+				maxResults: options.input?.maxResults,
+				cursor: options.input?.cursor,
+				output_mode: options.input?.output_mode,
+				context: options.input?.context,
+			},
+			token,
+		);
 	}
 }
 

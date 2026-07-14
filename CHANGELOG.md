@@ -1,5 +1,16 @@
 # Change Log
 
+## [0.2.0]
+
+- **Breaking:** Remove `workspaceFolder` from all tool inputs (single-root optimized; always uses the first enabled workspace folder)
+- **Breaking:** `grep` now takes `pattern` + optional `constraints` instead of a single combined `query`
+- `find_files` adds optional `constraints` separate from `query` (same explicit-parameter style as `multi_grep`)
+- Drop multi-root folder-hint resolution (`resolveWorkspaceFolder`) from the tool path
+
+## [0.1.1]
+
+- Documentation / packaging follow-ups for native LM tools
+
 ## [0.1.0]
 
 - **Breaking:** Stop exposing FFF via `mcpServerDefinitionProviders`
