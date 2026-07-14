@@ -32,7 +32,7 @@ curl -fsSL https://raw.githubusercontent.com/dmtrKovalenko/fff.nvim/main/install
 | `find_files` | `#find_files` | Fuzzy file-name search |
 | `multi_grep` | `#multi_grep` | OR search across multiple patterns |
 
-Under the hood the extension spawns `fff-mcp` per enabled workspace folder and forwards tool calls over stdio JSON-RPC. Multi-root workspaces share one tool set; pass optional `workspaceFolder` (name or path) when needed.
+Under the hood the extension spawns `fff-mcp` per enabled workspace folder and forwards tool calls over stdio JSON-RPC. Single-root: omit `workspaceFolder` (default is the open folder). Multi-root: pass `workspaceFolder` (name or path) only when targeting a specific root. Unknown values fall back to the first enabled folder with a short warning (no hard fail).
 
 ## Migration from MCP
 

@@ -65,9 +65,10 @@ async function invokeMcp(
 	token: vscode.CancellationToken,
 ): Promise<vscode.LanguageModelToolResult> {
 	const { folder, args } = stripWorkspaceFolder(input);
-	const session = await manager.getSession(folder);
+	const { session, warning } = await manager.getSession(folder);
 	const text = await session.callTool(mcpName, args, token);
-	return new vscode.LanguageModelToolResult([new vscode.LanguageModelTextPart(text)]);
+	const body = warning ? `Warning: ${warning}\n\n${text}` : text;
+	return new vscode.LanguageModelToolResult([new vscode.LanguageModelTextPart(body)]);
 }
 
 class FffGrepTool implements vscode.LanguageModelTool<GrepInput> {

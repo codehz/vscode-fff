@@ -29,14 +29,22 @@ export class FffSessionManager implements vscode.Disposable {
 
 	/**
 	 * Get or create a live session for the given folder hint.
+	 * Invalid/unknown workspaceFolder falls back to the first enabled folder.
 	 * @param workspaceFolder optional folder name or path (tool input)
 	 */
-	async getSession(workspaceFolder?: string): Promise<FffMcpSession> {
-		const folder = resolveWorkspaceFolder(workspaceFolder);
-		if (!folder) {
+	async getSession(
+		workspaceFolder?: string,
+	): Promise<{ session: FffMcpSession; warning?: string }> {
+		const resolved = resolveWorkspaceFolder(workspaceFolder);
+		if (!resolved) {
 			throw new Error(
 				'No workspace folder open. Open a folder so FFF can index the project root.',
 			);
+		}
+
+		const { folder, warning } = resolved;
+		if (warning) {
+			this.log.appendLine(`[FFF] ${warning}`);
 		}
 
 		const multiRoot = (vscode.workspace.workspaceFolders?.length ?? 0) > 1;
@@ -51,7 +59,7 @@ export class FffSessionManager implements vscode.Disposable {
 		const existing = this.sessions.get(key);
 		if (existing) {
 			if (existing.version === launch.version && existing.session.isAlive) {
-				return existing.session;
+				return { session: existing.session, warning };
 			}
 			this.log.appendLine(
 				`[${launch.label}] recreating session (config or process changed)`,
@@ -69,7 +77,7 @@ export class FffSessionManager implements vscode.Disposable {
 			this.sessions.delete(key);
 			throw err;
 		}
-		return session;
+		return { session, warning };
 	}
 
 	/** Snapshot of managed sessions for status output. */

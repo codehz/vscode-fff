@@ -35,14 +35,34 @@ suite('FFF config', () => {
 		}
 		const def = resolveWorkspaceFolder();
 		assert.ok(def);
-		assert.strictEqual(def!.uri.toString(), folders[0].uri.toString());
+		assert.strictEqual(def!.folder.uri.toString(), folders[0].uri.toString());
+		assert.strictEqual(def!.warning, undefined);
 
 		const byName = resolveWorkspaceFolder(folders[0].name);
 		assert.ok(byName);
-		assert.strictEqual(byName!.uri.toString(), folders[0].uri.toString());
+		assert.strictEqual(byName!.folder.uri.toString(), folders[0].uri.toString());
+		assert.strictEqual(byName!.warning, undefined);
 
 		const byPath = resolveWorkspaceFolder(folders[0].uri.fsPath);
 		assert.ok(byPath);
-		assert.strictEqual(byPath!.uri.toString(), folders[0].uri.toString());
+		assert.strictEqual(byPath!.folder.uri.toString(), folders[0].uri.toString());
+		assert.strictEqual(byPath!.warning, undefined);
+	});
+
+	test('resolveWorkspaceFolder falls back on unknown hint', () => {
+		const folders = vscode.workspace.workspaceFolders;
+		if (!folders?.length) {
+			return;
+		}
+		const resolved = resolveWorkspaceFolder('__no_such_workspace_folder__');
+		assert.ok(resolved);
+		assert.strictEqual(resolved!.folder.uri.toString(), folders[0].uri.toString());
+		assert.ok(resolved!.warning?.includes('__no_such_workspace_folder__'));
+		if (folders.length === 1) {
+			assert.ok(resolved!.warning?.toLowerCase().includes('omit'));
+			assert.ok(!resolved!.warning?.includes(`using "${folders[0].name}"`));
+		} else {
+			assert.ok(resolved!.warning?.includes(folders[0].name));
+		}
 	});
 });
