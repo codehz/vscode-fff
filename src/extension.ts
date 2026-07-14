@@ -1,5 +1,7 @@
 import * as vscode from 'vscode';
-import { provideFffMcpServers, registerFffMcpProvider } from './fffMcpProvider';
+import { resolveAllFffLaunches } from './fffConfig';
+import { FffSessionManager } from './fffSessionManager';
+import { registerFffTools } from './fffTools';
 
 let statusChannel: vscode.OutputChannel | undefined;
 
@@ -9,40 +11,51 @@ function getStatusChannel(): vscode.OutputChannel {
 }
 
 export function activate(context: vscode.ExtensionContext): void {
-	registerFffMcpProvider(context);
+	const log = getStatusChannel();
+	const manager = new FffSessionManager(log);
+	context.subscriptions.push(manager);
+
+	registerFffTools(context, manager);
 
 	context.subscriptions.push(
 		vscode.commands.registerCommand('vscode-fff.showStatus', () => {
 			const channel = getStatusChannel();
-			const defs = provideFffMcpServers();
 			channel.clear();
-			channel.appendLine('FFF MCP server definitions');
+			channel.appendLine('FFF language model tools');
 			channel.appendLine(`Generated at: ${new Date().toISOString()}`);
 			channel.appendLine('');
 
-			if (defs.length === 0) {
-				const folders = vscode.workspace.workspaceFolders ?? [];
-				if (folders.length === 0) {
-					channel.appendLine('No workspace folder open.');
-					channel.appendLine('Open a folder so fff-mcp can index the project root.');
-				} else {
-					channel.appendLine('No servers enabled.');
-					channel.appendLine('Check `fff.enabled` for each workspace folder.');
-				}
+			const folders = vscode.workspace.workspaceFolders ?? [];
+			if (folders.length === 0) {
+				channel.appendLine('No workspace folder open.');
+				channel.appendLine('Open a folder so fff-mcp can index the project root.');
 				channel.show(true);
 				return;
 			}
 
-			for (const def of defs) {
-				channel.appendLine(`## ${def.label}`);
-				channel.appendLine(`command: ${def.command}`);
-				channel.appendLine(`args:    ${JSON.stringify(def.args)}`);
-				channel.appendLine(`cwd:     ${def.cwd?.fsPath ?? '(default)'}`);
-				channel.appendLine(`version: ${def.version ?? '(none)'}`);
+			const launches = resolveAllFffLaunches();
+			if (launches.length === 0) {
+				channel.appendLine('No folders enabled.');
+				channel.appendLine('Check `fff.enabled` for each workspace folder.');
+				channel.show(true);
+				return;
+			}
+
+			const statuses = manager.listStatus();
+			for (const row of statuses) {
+				channel.appendLine(`## ${row.label}`);
+				channel.appendLine(`folder:  ${row.folder}`);
+				channel.appendLine(`command: ${row.command}`);
+				channel.appendLine(`args:    ${JSON.stringify(row.args)}`);
+				channel.appendLine(
+					`session: ${row.alive ? `alive (pid=${row.pid ?? '?'})` : 'not started'}`,
+				);
 				channel.appendLine('');
 			}
 
-			channel.appendLine(`Total: ${defs.length} server(s)`);
+			channel.appendLine('Tools: fff_grep, fff_find_files, fff_multi_grep');
+			channel.appendLine(`(#grep, #find_files, #multi_grep)`);
+			channel.appendLine(`Enabled folders: ${launches.length}/${folders.length}`);
 			channel.show(true);
 		}),
 	);
@@ -56,5 +69,5 @@ export function activate(context: vscode.ExtensionContext): void {
 }
 
 export function deactivate(): void {
-	// MCP child processes are owned by VS Code; nothing to tear down here.
+	// Session manager is disposed via context.subscriptions.
 }

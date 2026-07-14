@@ -1,8 +1,8 @@
 {
   "name": "vscode-fff",
   "displayName": "FFF for VS Code",
-  "description": "Workspace-scoped fff-mcp for Copilot Chat / language models. Indexes the current project instead of your home directory.",
-  "version": "0.0.1",
+  "description": "Workspace-scoped FFF search tools for Copilot Chat. Spawns fff-mcp per project and exposes native language model tools.",
+  "version": "0.1.0",
   "license": "MIT",
   "publisher": "codehz",
   "engines": {
@@ -19,27 +19,183 @@
   ],
   "keywords": [
     "fff",
-    "mcp",
     "search",
     "grep",
     "copilot",
-    "language-model"
+    "language-model",
+    "tools"
   ],
   "activationEvents": [
     "onStartupFinished"
   ],
   "main": "./dist/extension.js",
   "contributes": {
-    "mcpServerDefinitionProviders": [
-      {
-        "id": "vscode-fff.servers",
-        "label": "FFF"
-      }
-    ],
     "commands": [
       {
         "command": "vscode-fff.showStatus",
-        "title": "FFF: Show MCP Server Status"
+        "title": "FFF: Show Status"
+      }
+    ],
+    "languageModelTools": [
+      {
+        "name": "fff_grep",
+        "tags": [
+          "fff",
+          "search"
+        ],
+        "toolReferenceName": "grep",
+        "displayName": "FFF Grep",
+        "userDescription": "Search file contents with FFF (fast, frecency-ranked).",
+        "modelDescription": "Search file CONTENTS for a bare identifier or pattern. DEFAULT search tool. Prefer bare identifiers (e.g. 'InProgressQuote', 'ActorAuth'), NOT code syntax or complex regex. Filter files with constraint prefixes in the query (e.g. '*.rs query', 'src/ query', '!test/ query'). Use filename, directory (ending with /), or glob expressions to prefilter. Auto-expands definitions with body context. Use find_files when looking for a file by name; use multi_grep for OR across multiple patterns.",
+        "canBeReferencedInPrompt": true,
+        "icon": "$(search)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "description": "Search text or simple pattern with optional constraint prefixes (e.g. '*.ts ActorAuth', 'src/ prepareInvocation')."
+            },
+            "maxResults": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Max matching lines (default 20)."
+            },
+            "cursor": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Cursor from a previous result for pagination."
+            },
+            "output_mode": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Output format (default 'content')."
+            },
+            "workspaceFolder": {
+              "type": "string",
+              "description": "Optional multi-root folder name or path. Defaults to the first enabled workspace folder."
+            }
+          },
+          "required": [
+            "query"
+          ]
+        }
+      },
+      {
+        "name": "fff_find_files",
+        "tags": [
+          "fff",
+          "search"
+        ],
+        "toolReferenceName": "find_files",
+        "displayName": "FFF Find Files",
+        "userDescription": "Fuzzy file-name search with FFF (frecency-ranked).",
+        "modelDescription": "Fuzzy FILE NAME search (not file contents). Use when looking for a file or module by name. Supports path prefixes ('src/') and glob constraints. Keep queries SHORT — prefer 1-2 terms. Multiple words narrow results (waterfall), not OR. Use grep for content/definitions.",
+        "canBeReferencedInPrompt": true,
+        "icon": "$(file)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "query": {
+              "type": "string",
+              "description": "Fuzzy search query. Supports path prefixes and glob constraints."
+            },
+            "maxResults": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Max results (default 20)."
+            },
+            "cursor": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Cursor from a previous result for pagination."
+            },
+            "workspaceFolder": {
+              "type": "string",
+              "description": "Optional multi-root folder name or path. Defaults to the first enabled workspace folder."
+            }
+          },
+          "required": [
+            "query"
+          ]
+        }
+      },
+      {
+        "name": "fff_multi_grep",
+        "tags": [
+          "fff",
+          "search"
+        ],
+        "toolReferenceName": "multi_grep",
+        "displayName": "FFF Multi Grep",
+        "userDescription": "OR content search across multiple patterns with FFF.",
+        "modelDescription": "Search file contents for lines matching ANY of multiple patterns (OR logic). Patterns are literal text — do not escape special characters. Faster than regex alternation for literal text. Use constraints for file filters (e.g. '*.{ts,tsx} !test/'). Prefer this over multiple separate greps when searching case variants or related identifiers.",
+        "canBeReferencedInPrompt": true,
+        "icon": "$(search-fuzzy)",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "patterns": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "description": "Patterns to match (OR logic). Include naming variants: snake_case, PascalCase, camelCase."
+            },
+            "constraints": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "File constraints (e.g. '*.{ts,tsx} !test/')."
+            },
+            "maxResults": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Max matching lines (default 20)."
+            },
+            "cursor": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Cursor from a previous result for pagination."
+            },
+            "output_mode": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "description": "Output format (default 'content')."
+            },
+            "context": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "description": "Context lines before/after each match."
+            },
+            "workspaceFolder": {
+              "type": "string",
+              "description": "Optional multi-root folder name or path. Defaults to the first enabled workspace folder."
+            }
+          },
+          "required": [
+            "patterns"
+          ]
+        }
       }
     ],
     "configuration": {
@@ -49,7 +205,7 @@
           "type": "boolean",
           "default": true,
           "scope": "resource",
-          "description": "Provide an FFF MCP server for this workspace folder."
+          "description": "Enable FFF language model tools for this workspace folder."
         },
         "fff.binaryPath": {
           "type": "string",
