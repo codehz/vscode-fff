@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { resolveAllFffLaunches } from './fffConfig';
+import { configureFffResultUi } from './fffResultUi';
 import { FffSessionManager } from './fffSessionManager';
 import { registerFffTools } from './fffTools';
 
@@ -11,6 +12,8 @@ function getStatusChannel(): vscode.OutputChannel {
 }
 
 export function activate(context: vscode.ExtensionContext): void {
+	configureFffResultUi(context.extensionMode);
+
 	const log = getStatusChannel();
 	const manager = new FffSessionManager(log);
 	context.subscriptions.push(manager);

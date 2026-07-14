@@ -11,7 +11,7 @@ This extension:
 1. Always passes the **current workspace folder** as the index root to `fff-mcp`.
 2. Exposes FFF as **native language model tools** (`grep`, `find_files`, `multi_grep`) instead of registering an MCP server in VS Code.
 
-Native tools avoid Copilot’s MCP UI forcing raw tool-call JSON into the chat transcript (which breaks the “N tool calls” collapsible block and wastes space).
+Native tools avoid Copilot’s MCP UI forcing raw tool-call JSON into the chat transcript (which breaks the “N tool calls” collapsible block and wastes space). Tool results also attach Chat’s expandable file/location list (`toolResultDetails`) when paths can be parsed from fff output. Completion messages (`pastTenseMessage` / `toolResultMessage`) are used only when the `chatParticipantPrivate` proposed API is available (Extension Development Host or allowlisted builds).
 
 ## Requirements
 

@@ -1,5 +1,11 @@
 import * as vscode from 'vscode';
 import type { FffSessionManager } from './fffSessionManager';
+import {
+	buildLanguageModelToolResult,
+	parseFffResultDetails,
+	withPastTenseMessage,
+	workspaceRootUri,
+} from './fffResultUi';
 
 const TOOL_GREP = 'grep';
 const TOOL_FIND_FILES = 'find_files';
@@ -63,10 +69,15 @@ async function invokeMcp(
 	mcpName: string,
 	args: Record<string, unknown>,
 	token: vscode.CancellationToken,
+	pastMessage?: string,
 ): Promise<vscode.LanguageModelToolResult> {
 	const session = await manager.getSession();
 	const text = await session.callTool(mcpName, compactArgs(args), token);
-	return new vscode.LanguageModelToolResult([new vscode.LanguageModelTextPart(text)]);
+	const root = workspaceRootUri();
+	const details = root ? parseFffResultDetails(text, root) : undefined;
+	return buildLanguageModelToolResult(text, details, {
+		toolResultMessage: pastMessage,
+	});
 }
 
 class FffGrepTool implements vscode.LanguageModelTool<GrepInput> {
@@ -79,9 +90,11 @@ class FffGrepTool implements vscode.LanguageModelTool<GrepInput> {
 		const pattern = options.input?.pattern ?? '';
 		const constraints = options.input?.constraints?.trim();
 		const scope = constraints ? ` [${truncate(constraints, 24)}]` : '';
-		return {
-			invocationMessage: `FFF: grep "${truncate(pattern)}"${scope}`,
-		};
+		const label = `"${truncate(pattern)}"${scope}`;
+		return withPastTenseMessage(
+			{ invocationMessage: `FFF: grep ${label}` },
+			`FFF: grepped ${label}`,
+		);
 	}
 
 	async invoke(
@@ -92,6 +105,9 @@ class FffGrepTool implements vscode.LanguageModelTool<GrepInput> {
 		if (!pattern) {
 			throw new Error('grep requires a non-empty "pattern" string.');
 		}
+		const constraints = options.input?.constraints?.trim();
+		const scope = constraints ? ` [${truncate(constraints, 24)}]` : '';
+		const past = `FFF: grepped "${truncate(pattern)}"${scope}`;
 		return invokeMcp(
 			this.manager,
 			'grep',
@@ -102,6 +118,7 @@ class FffGrepTool implements vscode.LanguageModelTool<GrepInput> {
 				output_mode: options.input?.output_mode,
 			},
 			token,
+			past,
 		);
 	}
 }
@@ -116,9 +133,11 @@ class FffFindFilesTool implements vscode.LanguageModelTool<FindFilesInput> {
 		const q = options.input?.query ?? '';
 		const constraints = options.input?.constraints?.trim();
 		const scope = constraints ? ` [${truncate(constraints, 24)}]` : '';
-		return {
-			invocationMessage: `FFF: find files "${truncate(q)}"${scope}`,
-		};
+		const label = `"${truncate(q)}"${scope}`;
+		return withPastTenseMessage(
+			{ invocationMessage: `FFF: find files ${label}` },
+			`FFF: found files ${label}`,
+		);
 	}
 
 	async invoke(
@@ -129,6 +148,9 @@ class FffFindFilesTool implements vscode.LanguageModelTool<FindFilesInput> {
 		if (!query) {
 			throw new Error('find_files requires a non-empty "query" string.');
 		}
+		const constraints = options.input?.constraints?.trim();
+		const scope = constraints ? ` [${truncate(constraints, 24)}]` : '';
+		const past = `FFF: found files "${truncate(query)}"${scope}`;
 		return invokeMcp(
 			this.manager,
 			'find_files',
@@ -138,6 +160,7 @@ class FffFindFilesTool implements vscode.LanguageModelTool<FindFilesInput> {
 				cursor: options.input?.cursor,
 			},
 			token,
+			past,
 		);
 	}
 }
@@ -157,9 +180,11 @@ class FffMultiGrepTool implements vscode.LanguageModelTool<MultiGrepInput> {
 				: `${n} patterns`;
 		const constraints = options.input?.constraints?.trim();
 		const scope = constraints ? ` [${truncate(constraints, 24)}]` : '';
-		return {
-			invocationMessage: `FFF: multi_grep ${preview}${scope}`,
-		};
+		const label = `${preview}${scope}`;
+		return withPastTenseMessage(
+			{ invocationMessage: `FFF: multi_grep ${label}` },
+			`FFF: multi_grepped ${label}`,
+		);
 	}
 
 	async invoke(
@@ -170,6 +195,14 @@ class FffMultiGrepTool implements vscode.LanguageModelTool<MultiGrepInput> {
 		if (!Array.isArray(patterns) || patterns.length === 0) {
 			throw new Error('multi_grep requires a non-empty "patterns" array.');
 		}
+		const n = patterns.length;
+		const preview =
+			n === 1
+				? `"${truncate(String(patterns[0]))}"`
+				: `${n} patterns`;
+		const constraints = options.input?.constraints?.trim();
+		const scope = constraints ? ` [${truncate(constraints, 24)}]` : '';
+		const past = `FFF: multi_grepped ${preview}${scope}`;
 		return invokeMcp(
 			this.manager,
 			'multi_grep',
@@ -182,6 +215,7 @@ class FffMultiGrepTool implements vscode.LanguageModelTool<MultiGrepInput> {
 				context: options.input?.context,
 			},
 			token,
+			past,
 		);
 	}
 }

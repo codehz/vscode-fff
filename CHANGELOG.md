@@ -1,5 +1,10 @@
 # Change Log
 
+## [0.2.1]
+
+- Tool results attach Chat expandable `toolResultDetails` (file / location list) when fff output can be parsed
+- `pastTenseMessage` / `toolResultMessage` used only when `chatParticipantPrivate` is available (dev host / allowlisted builds)
+
 ## [0.2.0]
 
 - **Breaking:** Remove `workspaceFolder` from all tool inputs (single-root optimized; always uses the first enabled workspace folder)
