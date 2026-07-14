@@ -2,7 +2,7 @@
   "name": "vscode-fff",
   "displayName": "FFF for VS Code",
   "description": "Workspace-scoped FFF search tools for Copilot Chat. Spawns fff-mcp per project and exposes native language model tools.",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "license": "MIT",
   "publisher": "codehz",
   "engines": {
